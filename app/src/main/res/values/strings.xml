@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">PlayerWithCross</string>
+    <string name="Value">Текущее значение кроссфейда: </string>
+    <string name="choosingFile1">Выбор файла №1</string>
+    <string name="choosingFile2">Выбор файла №2</string>
+    <string name="play">Play</string>
+    <string name="stop">Stop</string>
+</resources>
