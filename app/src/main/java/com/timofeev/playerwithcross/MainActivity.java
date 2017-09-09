@@ -82,6 +82,9 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
                 intent.putExtra("selectedUri2",selectedUri2.toString());
                 intent.putExtra("crossfade",seekBar.getProgress()+2);
                 startService(intent);
+                file1.setEnabled(false);
+                file2.setEnabled(false);
+                seekBar.setEnabled(false);
                 btnStop.setEnabled(true);
                 btnPlay.setEnabled(false);
             }
@@ -94,6 +97,9 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
             public void onClick(View view) {
 
                 stopService(new Intent (MainActivity.this, ServiceForPlayers.class));
+                seekBar.setEnabled(true);
+                file1.setEnabled(true);
+                file2.setEnabled(true);
                 btnPlay.setEnabled(true);
                 btnStop.setEnabled(false);
 
