@@ -82,8 +82,8 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
                 intent.putExtra("selectedUri2",selectedUri2.toString());
                 intent.putExtra("crossfade",seekBar.getProgress()+2);
                 startService(intent);
-                btnStop.setVisibility(Button.VISIBLE);
-                btnPlay.setVisibility(Button.INVISIBLE);
+                btnStop.setEnabled(true);
+                btnPlay.setEnabled(false);
             }
         });
 
@@ -94,16 +94,16 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
             public void onClick(View view) {
 
                 stopService(new Intent (MainActivity.this, ServiceForPlayers.class));
-                btnPlay.setVisibility(Button.VISIBLE);
-                btnStop.setVisibility(Button.INVISIBLE);
+                btnPlay.setEnabled(true);
+                btnStop.setEnabled(false);
 
 
             }
         });
 
         if (serviceFlag){
-            btnStop.setVisibility(Button.VISIBLE);
-        } else btnPlay.setVisibility(Button.VISIBLE);
+            btnStop.setEnabled(true);
+        } else btnPlay.setEnabled(true);
 
     }
 
