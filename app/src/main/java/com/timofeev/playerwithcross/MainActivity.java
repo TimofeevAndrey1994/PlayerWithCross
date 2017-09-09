@@ -42,7 +42,10 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
 
+        //флаг, проверяющий, запущен ли сервис
         boolean serviceFlag = isMyServiceRunning(ServiceForPlayers.class);
+
+        //Находим элементы и ставим слушатели
 
         seekBar = (SeekBar) findViewById(R.id.seekBar);
         seekBar.setOnSeekBarChangeListener(this);
@@ -77,11 +80,13 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
                     return;
                 }
 
+                //Запускаем сервис и передаем в него URI выбранных песен, и значение кроссфейда
                 Intent intent = new Intent(MainActivity.this,ServiceForPlayers.class);
                 intent.putExtra("selectedUri1",selectedUri1.toString());
                 intent.putExtra("selectedUri2",selectedUri2.toString());
                 intent.putExtra("crossfade",seekBar.getProgress()+2);
                 startService(intent);
+                //делаем доступной только кнопку стоп
                 file1.setEnabled(false);
                 file2.setEnabled(false);
                 seekBar.setEnabled(false);
@@ -96,6 +101,7 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
             @Override
             public void onClick(View view) {
 
+                //останавливаем сервис и возвращаем доступность кнопок
                 stopService(new Intent (MainActivity.this, ServiceForPlayers.class));
                 seekBar.setEnabled(true);
                 file1.setEnabled(true);
@@ -116,6 +122,7 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
 
     void chooseFile(int requestCode){
 
+        //метод для выбора аудиофайла
         Intent intent = new Intent();
         intent.setType("audio/*");
         intent.setAction(Intent.ACTION_GET_CONTENT);
@@ -124,6 +131,7 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
 
     }
 
+    //известный метод для обработки выбора
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 
@@ -142,6 +150,7 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
 
     }
 
+
     public String getPath(Uri uri) {
         String[] proj = { MediaStore.Audio.Media.DATA };
         CursorLoader loader = new CursorLoader(this, uri, proj, null, null, null);
@@ -153,6 +162,7 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
         return result;
     }
 
+    //переопределенные методы seekbar
     @Override
     public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
         valueTextView.setText(String.valueOf(seekBar.getProgress()+2));
@@ -167,6 +177,7 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
     public void onStopTrackingTouch(SeekBar seekBar) {
 
     }
+
 
     private boolean isMyServiceRunning(Class<ServiceForPlayers> serviceClass) {
         ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);

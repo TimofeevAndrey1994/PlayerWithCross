@@ -7,8 +7,7 @@ import android.net.Uri;
 import android.os.CountDownTimer;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
-import android.util.Log;
-import android.widget.Toast;
+
 
 
 
@@ -45,13 +44,19 @@ public class ServiceForPlayers extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
 
+        //получем данные из интента
 
         musicUri1 = Uri.parse(intent.getStringExtra("selectedUri1"));
         musicUri2 = Uri.parse(intent.getStringExtra("selectedUri2"));
         i = intent.getIntExtra("crossfade",0);
 
+        //создаем плееры и поехали.....
+
         mediaPlayer1 = MediaPlayer.create(getApplicationContext(),musicUri1);
+        mediaPlayer1.setLooping(true);
+
         mediaPlayer2 = MediaPlayer.create(getApplicationContext(),musicUri2);
+        mediaPlayer2.setLooping(true);
 
         mediaPlayer1.start();
 
@@ -63,8 +68,12 @@ public class ServiceForPlayers extends Service {
     void startPlayers(final int crossfade){
 
    final int max = getMaxDuration(mediaPlayer1,mediaPlayer2);
-   countDownTimer = new CountDownTimer(max,crossfade*1000) {
 
+
+   //таймер.....метод onTick будет вызвваться по величине кроссфейда, и это будет происходить очень долго...пока самы не остановим сервис(практически)
+   countDownTimer = new CountDownTimer(max*100,crossfade*1000) {
+
+          //в этом методе меняем треки
           @Override
           public void onTick(long l) {
 
@@ -76,15 +85,10 @@ public class ServiceForPlayers extends Service {
 
               if(mediaPlayer1!=null) {
                   if (mediaPlayer1.isPlaying()) {
-                          if((max-mediaPlayer2.getCurrentPosition())<=crossfade){
-                              Toast.makeText(getApplicationContext(), "2 трек закончен, 1 доигрывает", Toast.LENGTH_SHORT).show();
-                              return;
-                          }
+
                           mediaPlayer1.pause();
                           mediaPlayer2.start();
                           upVolume(mediaPlayer2,crossfade);
-
-                       //   Toast.makeText(getApplicationContext(), "player 1", Toast.LENGTH_SHORT).show();
                           return;
 
 
@@ -92,16 +96,10 @@ public class ServiceForPlayers extends Service {
               }
               if(mediaPlayer2!=null) {
                   if (mediaPlayer2.isPlaying()) {
-                      if((max-mediaPlayer1.getCurrentPosition())<=crossfade){
-                          Toast.makeText(getApplicationContext(), "1 трек закончен, второй доигрывает", Toast.LENGTH_SHORT).show();
-                          return;
-                      }
 
                       mediaPlayer2.pause();
                       mediaPlayer1.start();
                       upVolume(mediaPlayer1,crossfade);
-
-                     // Toast.makeText(getApplicationContext(), "player 2", Toast.LENGTH_SHORT).show();
                       return;
 
                   }
@@ -110,14 +108,15 @@ public class ServiceForPlayers extends Service {
 
                 @Override
                 public void onFinish() {
-                    Toast.makeText(getApplicationContext(),"Воспроизведение треков остановлено",Toast.LENGTH_LONG).show();
                     stopSelf();
                 }
             };
 
+        //стартуем таймер
         countDownTimer.start();
     }
 
+    //освобождаем плеер и останавливаем таймер при уничтожении сервиса
     @Override
     public void onDestroy() {
         super.onDestroy();
@@ -138,6 +137,7 @@ public class ServiceForPlayers extends Service {
 
     }
 
+    //получем максимальную длину из двух треков
     int getMaxDuration(MediaPlayer mp1, MediaPlayer mp2){
 
 
@@ -153,6 +153,7 @@ public class ServiceForPlayers extends Service {
 
     }
 
+    //метод для повышения громкости
     void upVolume(MediaPlayer mp, int i){
 
         for(int k=1;k==i;k++){
