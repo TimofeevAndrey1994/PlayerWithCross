@@ -166,13 +166,12 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
         if (resultCode == RESULT_OK) {
             if (requestCode == SELECT_AUDIO_FILE1) {
                 selectedUri1 = data.getData();
-                selectedPath1 = getName(selectedUri1);
-                Log.d("myName", String.valueOf(selectedPath1));
+                //selectedPath1 = getName(selectedUri1);
                 file1.setText(selectedUri1.getPath());
             }
             if (requestCode == SELECT_AUDIO_FILE2) {
                 selectedUri2 = data.getData();
-                selectedPath2 = getName(selectedUri2);
+                //selectedPath2 = getName(selectedUri2);
                 file2.setText(selectedUri2.getPath());
             }
         }
