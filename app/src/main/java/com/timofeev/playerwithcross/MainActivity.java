@@ -1,14 +1,22 @@
 package com.timofeev.playerwithcross;
 
+import android.Manifest;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.content.CursorLoader;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.provider.MediaStore;
+import android.provider.OpenableColumns;
+import android.support.annotation.NonNull;
+import android.support.design.widget.Snackbar;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.SeekBar;
@@ -20,6 +28,8 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
 
     private static final int SELECT_AUDIO_FILE1 = 1;
     private static final int SELECT_AUDIO_FILE2 = 2;
+
+    private static final int PERMISSION_REQUEST_CODE = 123;
 
     String selectedPath1;
     String selectedPath2;
@@ -58,7 +68,16 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
         file1.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-               chooseFile(SELECT_AUDIO_FILE1);
+
+                if (hasPermissions()) {
+                    chooseFile(SELECT_AUDIO_FILE1);
+
+                } else {
+
+                    requestPermissionWithRationale();
+
+                }
+
             }
         });
 
@@ -66,7 +85,16 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
         file2.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                chooseFile(SELECT_AUDIO_FILE2);
+
+                if (hasPermissions()) {
+                    chooseFile(SELECT_AUDIO_FILE2);
+
+                } else {
+
+                    requestPermissionWithRationale();
+
+                }
+
             }
         });
 
@@ -75,16 +103,16 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
             @Override
             public void onClick(View view) {
 
-                if (selectedPath1==null || selectedPath2 == null){
-                    Toast.makeText(MainActivity.this,"Выберете 2 файла для воспроизведения",Toast.LENGTH_SHORT).show();
+                if (selectedUri1 == null || selectedUri2 == null) {
+                    Toast.makeText(MainActivity.this, "Выберете 2 файла для воспроизведения", Toast.LENGTH_SHORT).show();
                     return;
                 }
 
                 //Запускаем сервис и передаем в него URI выбранных песен, и значение кроссфейда
-                Intent intent = new Intent(MainActivity.this,ServiceForPlayers.class);
-                intent.putExtra("selectedUri1",selectedUri1.toString());
-                intent.putExtra("selectedUri2",selectedUri2.toString());
-                intent.putExtra("crossfade",seekBar.getProgress()+2);
+                Intent intent = new Intent(MainActivity.this, ServiceForPlayers.class);
+                intent.putExtra("selectedUri1", selectedUri1.toString());
+                intent.putExtra("selectedUri2", selectedUri2.toString());
+                intent.putExtra("crossfade", seekBar.getProgress() + 2);
                 startService(intent);
                 //делаем доступной только кнопку стоп
                 file1.setEnabled(false);
@@ -102,7 +130,7 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
             public void onClick(View view) {
 
                 //останавливаем сервис и возвращаем доступность кнопок
-                stopService(new Intent (MainActivity.this, ServiceForPlayers.class));
+                stopService(new Intent(MainActivity.this, ServiceForPlayers.class));
                 seekBar.setEnabled(true);
                 file1.setEnabled(true);
                 file2.setEnabled(true);
@@ -113,14 +141,14 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
             }
         });
 
-        if (serviceFlag){
+        if (serviceFlag) {
             btnStop.setEnabled(true);
         } else btnPlay.setEnabled(true);
 
     }
 
 
-    void chooseFile(int requestCode){
+    void chooseFile(int requestCode) {
 
         //метод для выбора аудиофайла
         Intent intent = new Intent();
@@ -138,34 +166,30 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
         if (resultCode == RESULT_OK) {
             if (requestCode == SELECT_AUDIO_FILE1) {
                 selectedUri1 = data.getData();
-                selectedPath1 = getPath(selectedUri1);
-                file1.setText(selectedPath1);
+                selectedPath1 = getName(selectedUri1);
+                Log.d("myName", String.valueOf(selectedPath1));
+                file1.setText(selectedUri1.getPath());
             }
             if (requestCode == SELECT_AUDIO_FILE2) {
                 selectedUri2 = data.getData();
-                selectedPath2 = getPath(selectedUri2);
-                file2.setText(selectedPath2);
+                selectedPath2 = getName(selectedUri2);
+                file2.setText(selectedUri2.getPath());
             }
         }
 
     }
 
 
-    public String getPath(Uri uri) {
-        String[] proj = { MediaStore.Audio.Media.DATA };
-        CursorLoader loader = new CursorLoader(this, uri, proj, null, null, null);
-        Cursor cursor = loader.loadInBackground();
-        int column_index = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA);
-        cursor.moveToFirst();
-        String result = cursor.getString(column_index);
-        cursor.close();
-        return result;
+    public String getName(Uri uri) {
+        Cursor returnCursor = this.getContentResolver().query(uri, null, null, null, null);
+        int nameIndex = returnCursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+        return returnCursor.getString(nameIndex);
     }
 
     //переопределенные методы seekbar
     @Override
     public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-        valueTextView.setText(String.valueOf(seekBar.getProgress()+2));
+        valueTextView.setText(String.valueOf(seekBar.getProgress() + 2));
     }
 
     @Override
@@ -188,6 +212,88 @@ public class MainActivity extends AppCompatActivity implements SeekBar.OnSeekBar
         }
         return false;
     }
+
+    //метод проверки разрещения
+    private boolean hasPermissions() {
+        int res = 0;
+        //string array of permissions,
+        String[] permissions = new String[]{Manifest.permission.READ_EXTERNAL_STORAGE};
+
+        for (String perms : permissions) {
+            res = checkCallingOrSelfPermission(perms);
+            if (!(res == PackageManager.PERMISSION_GRANTED)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    //пытаемся регистрировать разрешение
+    private void requestPerms() {
+
+        String[] permissions = new String[]{Manifest.permission.READ_EXTERNAL_STORAGE};
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            requestPermissions(permissions, PERMISSION_REQUEST_CODE);
+        }
+    }
+
+
+    //обрабатываем ответ пользователя
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        boolean allowed = true;
+
+        switch (requestCode) {
+            case PERMISSION_REQUEST_CODE:
+
+                for (int res : grantResults) {
+                    // if user granted all permissions.
+                    allowed = allowed && (res == PackageManager.PERMISSION_GRANTED);
+                }
+
+                break;
+            default:
+                // if user not granted permissions.
+                allowed = false;
+                break;
+        }
+
+        if (allowed) {
+            //user granted all permissions we can perform our task.
+            Toast.makeText(getApplicationContext(), "разрешения успешно получены", Toast.LENGTH_SHORT).show();
+        } else {
+            // we will give warning to user that they haven't granted permissions.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (shouldShowRequestPermissionRationale(Manifest.permission.READ_EXTERNAL_STORAGE)) {
+                    Toast.makeText(this, "Storage Permissions denied.", Toast.LENGTH_SHORT).show();
+
+                } else {
+                    //вызов snackBar
+                }
+            }
+        }
+
+    }
+
+    public void requestPermissionWithRationale() {
+        if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                Manifest.permission.READ_EXTERNAL_STORAGE)) {
+            final String message = "Storage permission is needed to show files count";
+            Snackbar.make(MainActivity.this.findViewById(R.id.activity_view), message, Snackbar.LENGTH_LONG)
+                    .setAction("GRANT", new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            requestPerms();
+                        }
+                    })
+                    .show();
+        } else {
+            requestPerms();
+        }
+    }
+
 }
+
+
 
 
