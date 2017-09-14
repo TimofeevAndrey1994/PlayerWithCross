@@ -15,32 +15,23 @@ public class ServiceForPlayers extends Service {
     MediaPlayer mediaPlayer1;
     MediaPlayer mediaPlayer2;
 
-
+    final float MAX_VOLUME = 100;
 
     Uri musicUri1;
     Uri musicUri2;
 
     CountDownTimer countDownTimer;
 
-    //для громкости
-    final float x1 = 0.1f;
-    final float x2 = 0.2f;
-    final float x3 = 0.3f;
-    final float x4 = 0.4f;
-    final float x5 = 0.5f;
-    final float x6 = 0.6f;
-    final float x7 = 0.7f;
-    final float x8 = 0.8f;
-    final float x9 = 0.9f;
-    final float x10 = 1.0f;
-
-
     int i;
-    //счетчики
-    int enter_count=1;
-    int enter_count2=1;
-    int enter_count_for2track=1;
-    int enter_count2_for2track=1;
+
+    //переменная для текущей громкости
+    private int iVolume_for1=0;
+    private int iVolume_for2=0;
+
+    private final static int INT_VOLUME_MAX = 100;
+    private final static int INT_VOLUME_MIN = 0;
+    private final static float FLOAT_VOLUME_MAX = 1;
+    private final static float FLOAT_VOLUME_MIN = 0;
 
 
     @Override
@@ -82,49 +73,45 @@ public class ServiceForPlayers extends Service {
 
     void startPlayers(final int crossfade){
 
-        final int max = getMaxDuration(mediaPlayer1,mediaPlayer2);
-
 
    //таймер.....метод onTick будет вызвваться по величине кроссфейда, и это будет происходить очень долго...пока самы не остановим сервис(практически)
-   countDownTimer = new CountDownTimer(max*100, 1000) {
+   countDownTimer = new CountDownTimer(5000, 100) {
 
           //в этом методе меняем треки
           @Override
           public void onTick(long l) {
 
+
+
               //повышаем громкость в первые 10 секунд трека, если трек играет
               if(mediaPlayer1.isPlaying()) {
-                  if (mediaPlayer1.getCurrentPosition() <= 10000) {
-                      upVolume(mediaPlayer1, enter_count);
-                      enter_count = enter_count + 1;
-                      Log.d("enter_count", String.valueOf(enter_count));
-                      enter_count2 = 1;
+                  if (mediaPlayer1.getCurrentPosition() <= 10000 && iVolume_for1<=101) {
+
+                      updateVolume(+1, iVolume_for1, mediaPlayer1);
+
                   }
               }
 
               //повышаем громкость в первые 10 секунд трека, если трек играет
               if(mediaPlayer2.isPlaying()) {
-                  if (mediaPlayer2.getCurrentPosition() <= 10000) {
-                      upVolume(mediaPlayer2, enter_count_for2track);
-                      enter_count_for2track = enter_count_for2track + 1;
-                      Log.d("enter_countfor2track", String.valueOf(enter_count_for2track));
-                      enter_count2_for2track = 1;
+                  if (mediaPlayer2.getCurrentPosition() <= 10000 && iVolume_for2<=101 ) {
+
+                      updateVolume(+1, iVolume_for2,mediaPlayer2);
+
                   }
               }
               //если остается меньше 10 сек до конца, трек начинает затихать
-              if (mediaPlayer1.getDuration()-mediaPlayer1.getCurrentPosition()<=10000){
-                  downVolume(mediaPlayer1, enter_count2);
-                  enter_count2=enter_count2+1;
-                  enter_count=1;
-                  Log.d("enter_count2", String.valueOf(enter_count2));
+              if (mediaPlayer1.getDuration()-mediaPlayer1.getCurrentPosition()<=10000 && !(iVolume_for1==0)){
+
+                  updateVolume(-1,iVolume_for1,mediaPlayer1);
+
               }
 
               //если остается меньше 10 сек до конца, трек начинает затихать
-              if(mediaPlayer2.getDuration()-mediaPlayer2.getCurrentPosition()<=10000){
-                  downVolume(mediaPlayer2, enter_count2_for2track);
-                  enter_count2_for2track=enter_count2_for2track+1;
-                  Log.d("enter_count2_for2track", String.valueOf(enter_count2_for2track));
-                  enter_count_for2track=1;
+              if(mediaPlayer2.getDuration()-mediaPlayer2.getCurrentPosition()<=10000 && !(iVolume_for2==0)){
+
+                  updateVolume(-1, iVolume_for2,mediaPlayer2);
+
               }
 
 
@@ -136,7 +123,6 @@ public class ServiceForPlayers extends Service {
 
                               if(!mediaPlayer2.isPlaying()){
                                mediaPlayer2.start();
-                               mediaPlayer2.setVolume(0.1f,0.1f);
 
                               }
                           }
@@ -151,7 +137,6 @@ public class ServiceForPlayers extends Service {
 
                           if(!mediaPlayer1.isPlaying()){
                               mediaPlayer1.start();
-                              mediaPlayer1.setVolume(0.1f, 0.1f);
                           }
                       }
 
@@ -163,7 +148,15 @@ public class ServiceForPlayers extends Service {
 
                 @Override
                 public void onFinish() {
-                    stopSelf();
+
+                    //теперь каждый раз, когда попадаем в этот метод,
+                    // будет заново стартовать таймер, и таймер получится бесконечным,
+                    // пока пользователь сам его не остановит
+
+                    if (countDownTimer!=null){
+                        countDownTimer.start();
+                    }
+
                 }
             };
 
@@ -192,102 +185,37 @@ public class ServiceForPlayers extends Service {
 
     }
 
-    //получем максимальную длину из двух треков
-    int getMaxDuration(MediaPlayer mp1, MediaPlayer mp2){
+    //метод для линейного изменения громкости
+    private void updateVolume(int change, int iVolume, MediaPlayer mp) {
+        // уменьшаем или увеличиваем в зависимости от знака перед change
 
-
-        if (mp1.getDuration()>mp2.getDuration()){
-            return mp1.getDuration();
-        }
-        if (mp2.getDuration()>mp1.getDuration()){
-            return mp2.getDuration();
-        } else
-            return mp1.getDuration();
+        iVolume = iVolume + change;
 
 
 
-    }
-
-    //метод для повышения громкости
-    void upVolume(MediaPlayer mp, int k){
-
-        if(k==1){
-            mp.setVolume(x1,x1);
-        }
-
-        if(k==2){
-            mp.setVolume(x2,x2);
-        }
-
-        if(k==3){
-            mp.setVolume(x3,x3);
-        }
-
-        if(k==4){
-            mp.setVolume(x4,x4);
-        }
-
-        if(k==5){
-            mp.setVolume(x5,x5);
-        }
-        if(k==6){
-            mp.setVolume(x6,x6);
-        }
-        if(k==7){
-
-            mp.setVolume(x7,x7);
-        }
-        if(k==8){
-            mp.setVolume(x8,x8);
-        }
-        if(k==9){
-            mp.setVolume(x9,x9);
-        }
-        if(k==10){
-            mp.setVolume(x10,x10);
-        }
+        if (iVolume < INT_VOLUME_MIN)
+            iVolume = INT_VOLUME_MIN;
+        else if (iVolume > INT_VOLUME_MAX)
+            iVolume = INT_VOLUME_MAX;
+        // переводим во float
+        float fVolume = 1 - ((float) Math.log(INT_VOLUME_MAX - iVolume) / (float) Math.log(INT_VOLUME_MAX));
+        Log.d("fVolume", String.valueOf(fVolume));
 
 
-    }
+        if (fVolume < FLOAT_VOLUME_MIN)
+            fVolume = FLOAT_VOLUME_MIN;
+        else if (fVolume > FLOAT_VOLUME_MAX)
+            fVolume = FLOAT_VOLUME_MAX;
 
-    void downVolume(MediaPlayer mp, int k){
-
-
-        if(k==1){
-            mp.setVolume(x10,x10);
-        }
-
-        if(k==2){
-            mp.setVolume(x9,x9);
-        }
-
-        if(k==3){
-            mp.setVolume(x8,x8);
-        }
-
-        if(k==4){
-            mp.setVolume(x7,x7);
-        }
-
-        if(k==5){
-            mp.setVolume(x6,x6);
-        }
-        if(k==6){
-            mp.setVolume(x5,x5);
-        }
-        if(k==7){
-            mp.setVolume(x4,x4);
-        }
-        if(k==8){
-            mp.setVolume(x3,x3);
-        }
-        if(k==9){
-            mp.setVolume(x2,x2);
-        }
-        if(k==10){
-            mp.setVolume(x1,x1);
-        }
-
+            mp.setVolume(fVolume, fVolume);
+            if (mp==mediaPlayer1) {
+                iVolume_for1 = iVolume;
+                Log.d("iVolume_for1", String.valueOf(iVolume_for1));
+            }
+            if(mp==mediaPlayer2){
+                iVolume_for2 = iVolume;
+                Log.d("iVolume_for2", String.valueOf(iVolume_for2));
+            }
     }
 
 }
